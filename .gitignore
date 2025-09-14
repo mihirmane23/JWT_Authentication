@@ -1,0 +1,16 @@
+# .NET Core
+bin/
+obj/
+*.csproj.user
+.vs/
+*.log
+
+# Angular
+node_modules/
+dist/
+.angular/
+*.log
+
+# IDEs
+.idea/
+*.code-workspace
