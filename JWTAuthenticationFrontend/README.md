@@ -1,59 +1,68 @@
-# JwtAuthFrontend
+- The app runs at `http://localhost:4200`.
+- Update `auth.service.ts` with the correct backend URL if needed (e.g., for production).
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.2.15.
+## Usage
 
-## Development server
+### Running the Application
+1. Start the backend (`dotnet run` in `JWTAuthenticationImplementation`).
+2. Start the frontend (`ng serve` in `jwt-auth-frontend`).
+3. Open `http://localhost:4200/login` in your browser.
+4. Log in with username `test` and password `password`.
+- On success, you'll be redirected to `/protected`, which fetches data from the protected backend endpoint.
+5. If not logged in, protected routes redirect to login.
+6. Logout from the protected page clears the token and redirects to login.
 
-To start a local development server, run:
+### Testing
+- **Browser DevTools**: Use Network tab to inspect requests (e.g., login POST without JWT, protected GET with `Authorization: Bearer <jwt>`).
+- **Postman/cURL**: Test backend endpoints as described in backend setup.
+- **Debug Logs**: Check browser console for logs in `login.component.ts` and `auth.service.ts`.
 
-```bash
-ng serve
-```
+## Frontend Explanation (Angular Standalone App)
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+This frontend uses Angular 18+ standalone components (no NgModules). Key features include JWT handling, route protection, and automatic token attachment to API requests.
 
-## Code scaffolding
+### Key Components and Files
+- **LoginComponent (`login.component.ts`)**: Handles the login form. Uses `[(ngModel)]` for two-way binding and submits credentials to `AuthService`. On success, redirects to `/protected`.
+- **ProtectedComponent (`protected.component.ts`)**: Fetches data from a protected backend endpoint. Includes a logout button.
+- **AuthService (`auth.service.ts`)**: Manages login, token storage (in `localStorage`), and auth checks. Provided at root level (`providedIn: 'root'`).
+- **AuthInterceptor (`auth.interceptor.ts`)**: Automatically adds `Authorization: Bearer <jwt>` to HTTP requests if a token exists. Registered globally via `withInterceptors` in `app.config.ts`.
+- **AuthGuard (`auth.guard.ts`)**: Protects routes like `/protected`. Checks if logged in via `AuthService`; redirects to login if not. Used in `app.routes.ts`.
+- **Routing (`app.routes.ts`)**: Defines routes with guards and redirects.
+- **App Config (`app.config.ts`)**: Bootstraps providers, including router and HTTP client with interceptors. No need for `@NgModule`; everything is standalone.
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+### How Registration Works (Standalone Angular)
+In standalone Angular, components, services, and providers are registered declaratively:
+- **Services**: Use `providedIn: 'root'` in `@Injectable` for global availability (e.g., `AuthService`).
+- **Interceptors**: Register via `withInterceptors([authInterceptor])` in `provideHttpClient` (in `app.config.ts`).
+- **Guards**: Define as functions and attach to routes in `app.routes.ts` (e.g., `canActivate: [authGuard]`).
+- **Components**: Mark as `standalone: true` and import modules like `FormsModule` directly in the component.
+- **Bootstrap**: In `main.ts`, use `bootstrapApplication` with `appConfig` to provide global setups.
 
-```bash
-ng generate component component-name
-```
+No `AppModule` is needed—everything is tree-shakable and lazy-loaded where possible.
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+### How JWT Flow Works in Frontend
+1. **Login**: Form submits credentials to backend via `AuthService.login()`. No JWT sent here.
+2. **Token Storage**: On success, store JWT in `localStorage` (use HttpOnly cookies in production for security).
+3. **Protected Requests**: `AuthInterceptor` clones requests and adds `Authorization: Bearer <jwt>` automatically for all HTTP calls (e.g., in `ProtectedComponent`).
+4. **Route Protection**: `AuthGuard` checks `isLoggedIn()` before allowing access to routes.
+5. **Logout**: Clears token and redirects.
 
-```bash
-ng generate --help
-```
+### Security Notes
+- **Token Storage**: `localStorage` is vulnerable to XSS; use HttpOnly cookies or IndexedDB in production.
+- **HTTPS**: Ensure backend uses HTTPS.
+- **CORS**: Backend has CORS enabled for `http://localhost:4200`.
+- **Production**: Use environment variables for API URLs, secure secrets, and add token refresh logic.
 
-## Building
+### Integration with One Identity
+This example uses simple credentials. For One Identity, modify the backend to integrate with its API (e.g., OAuth/OIDC). The frontend can adapt by changing the login flow to handle redirects or tokens from One Identity.
 
-To build the project run:
+## Troubleshooting
+- **CORS Errors**: Ensure backend `Program.cs` has `app.UseCors("AllowAngularApp")` with correct origins.
+- **401 Unauthorized**: Check credentials, token expiry (30 min), or interceptor.
+- **Form Issues**: Ensure `FormsModule` is imported in components.
+- **Debug**: Add console logs and use browser Network/Console tabs.
 
-```bash
-ng build
-```
+For issues, open a GitHub issue or check logs.
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+## License
+MIT License. Feel free to use and modify.
